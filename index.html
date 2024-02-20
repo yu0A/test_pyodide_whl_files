@@ -1,0 +1,110 @@
+HTMLResult Skip Results Iframe
+EDIT ON
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+    <script src="//unpkg.com/vue@3"></script>
+    <!-- import CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+    <!-- import JavaScript -->
+    <script src="https://unpkg.com/element-plus"></script>
+    <title>Element Plus demo</title>
+  </head>
+  <body>
+    <div id="app">
+      <el-button :disabled="loaded_files_disabled" @click="myFunction">{{ message }}</el-button>
+      <el-button :disabled="!loaded_files_disabled" @click="draw">{{ message2 }}</el-button>
+      <el-text class="mx-1" type="success">{{  }}</el-text>
+      <div id="target"></div>
+    </div>
+    <script>
+      const App = {
+        data() {
+          return {
+            message: "Load Files",
+            message2: "Draw Matplotlib",
+            loaded_files_disabled: false,
+            pyodide: undefined,
+            loaded_files: "",
+          };
+        },
+        created() {
+            this.main();
+        },
+        methods: {
+            async myFunction() {  
+                dirHandle = await showDirectoryPicker();
+                const nativefs = await this.pyodide.mountNativeFS("/mount_dir", dirHandle);
+                this.pyodide.pyimport("sys").path.insert(0, "/mount_dir")
+                result = this.pyodide.runPython(`
+import os
+import json
+print(json.dumps(os.listdir('/mount_dir')))
+`);
+                console.log(this.loaded_files)
+                this.loaded_files_disabled = true;
+                setTimeout(() => {
+                    this.message = this.loaded_files;
+                }, 500);
+            },
+            async main() {
+                this.pyodide = await loadPyodide();
+                // Pyodide is now ready to use...
+                console.log(this.pyodide.runPython(`
+                    import sys
+                    sys.version
+                `));
+                // install other modules
+                await this.pyodide.loadPackage("matplotlib");
+            },
+            async draw() {
+                document.pyodideMplTarget = document.getElementById('target')
+                this.pyodide.runPython(`
+import browser_backend
+import html5_canvas_backend
+import wasm_backend
+import matplotlib.pyplot as plt
+import numpy as np
+import matplotlib as mpl
+import time
+
+mpl.use("module://matplotlib_pyodide.html5_canvas_backend")
+
+# 创建一个简单的数据集  
+x = np.linspace(0, 10, 100)  
+y = np.sin(x)  
+  
+# 创建一个图形和轴对象  
+fig, ax = plt.subplots(figsize=(5, 2.5), layout='constrained')
+  
+# 绘制数据  
+ax.plot(x, y)  
+  
+# 设置x轴刻度和标签  
+ax.set_xticks([0, 2.5, 5, 7.5, 10])  
+ax.set_xticklabels(['0', '2.5', '5', '7.5', '10'])  
+  
+# 设置y轴刻度和标签  
+ax.set_yticks([-1, 0, 1])  
+ax.set_yticklabels(['-1', '0', '1'])  
+  
+# 显示图形  
+plt.show()
+time.sleep(1)
+plt.close()
+`);
+                // this.pyodide.runPython(`plt.get_id()`);
+            }
+        },
+      };
+      const app = Vue.createApp(App);
+      app.use(ElementPlus);
+      app.mount("#app");
+    </script>
+  </body>
+</html>
+
+
+Resources
