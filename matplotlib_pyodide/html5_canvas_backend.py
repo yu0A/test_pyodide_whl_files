@@ -43,6 +43,9 @@ interactive(True)
 class FigureCanvasHTMLCanvas(FigureCanvasWasm):
     def __init__(self, *args, **kwargs):
         FigureCanvasWasm.__init__(self, *args, **kwargs)
+    
+    def destroy(self):
+        FigureCanvasWasm.destroy(self)
 
     def draw(self):
         # Render the figure using custom renderer
